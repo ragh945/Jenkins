@@ -1,0 +1,61 @@
+pipeline {
+    agent any
+    environment {
+        RELEASE = '20.04'
+    }
+    stages {
+        stage('Build') {
+            environment {
+                LOG_LEVEL = 'INFO'
+            }
+            parallel {
+                stage('linux-arm64') {
+                    agent any
+                    steps {
+                        echo "Building release ${RELEASE} for ${STAGE_NAME} with log level ${LOG_LEVEL}..."
+                        bat 'timeout /t 10 > nul'
+                    }
+                }
+                stage('linux-amd64') {
+                    agent any
+                    steps {
+                        echo "Building release ${RELEASE} for ${STAGE_NAME} with log level ${LOG_LEVEL}..."
+                        bat 'timeout /t 20 > nul'
+                    }
+                }
+                stage('windows-amd64') {
+                    agent any
+                    steps {
+                        echo "Building release ${RELEASE} for ${STAGE_NAME} with log level ${LOG_LEVEL}..."
+                        bat 'timeout /t 30 > nul'
+                    }
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                echo "Testing release ${RELEASE}..."
+            }
+        }
+
+        stage('Deploy') {
+            input {
+                message 'Deploy?'
+                ok 'Do it!'
+                parameters {
+                    string(name: 'TARGET_ENVIRONMENT', defaultValue: 'PROD', description: 'Target deployment environment')
+                }
+            }
+            steps {
+                echo "Deploying release ${RELEASE} to environment ${TARGET_ENVIRONMENT}"
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Prints whether deploy happened or not, success or failure'
+        }
+    }
+}
