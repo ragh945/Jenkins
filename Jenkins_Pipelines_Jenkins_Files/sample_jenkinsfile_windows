@@ -1,65 +1,59 @@
 pipeline {
     agent any
+
     environment {
-        RELEASE = '20.04'
+        // Define environment variables here
+        MY_ENV_VAR = 'Custom Value'
     }
+
     stages {
-        stage('Build') {
-            environment {
-                LOG_LEVEL = 'INFO'
-            }
-            parallel {
-                stage('windows-arm64') {
-                    agent any
-                    steps {
-                        echo "Building release ${RELEASE} for ${STAGE_NAME} with log level ${LOG_LEVEL}..."
-                        bat 'ping -n 11 127.0.0.1 >nul'  // Simulates 10 seconds sleep
-                    }
-                }
-                stage('windows-amd64') {
-                    agent any
-                    steps {
-                        echo "Building release ${RELEASE} for ${STAGE_NAME} with log level ${LOG_LEVEL}..."
-                        bat 'ping -n 21 127.0.0.1 >nul'  // Simulates 20 seconds sleep
-                    }
-                }
-                stage('windows-x64') {
-                    agent any
-                    steps {
-                        echo "Building release ${RELEASE} for ${STAGE_NAME} with log level ${LOG_LEVEL}..."
-                        bat 'ping -n 31 127.0.0.1 >nul'  // Simulates 30 seconds sleep
-                    }
+        stage('Checkout') {
+            steps {
+                script {
+                    // Clone the Git repository's master branch
+                    def gitRepoUrl = 'https://github.com/anshulc55/Jenkins_Upgradev3.git'
+
+                    checkout([$class: 'GitSCM', 
+                        branches: [[name: '*/master']], 
+                        userRemoteConfigs: [[url: gitRepoUrl]], 
+                        extensions: [[$class: 'CleanBeforeCheckout'], [$class: 'CloneOption', noTags: false, shallow: true, depth: 1]]
+                    ])
                 }
             }
         }
+
+        stage('Build') {
+            steps {
+                // Build your application here (e.g., compile, package, etc.)
+                bat '''
+                dir
+                echo In Build Step
+                '''
+            }
+        }
+
         stage('Test') {
             steps {
-                echo "Testing release ${RELEASE}..."
+                // Run your tests (e.g., unit tests, integration tests)
                 bat 'echo In Test Step'
             }
         }
+
         stage('Deploy') {
-            input {
-                message 'Deploy?'
-                ok 'Do it!'
-                parameters {
-                    string(name: 'TARGET_ENVIRONMENT', defaultValue: 'PROD', description: 'Target deployment environment')
-                }
-            }
             steps {
-                echo "Deploying release ${RELEASE} to environment ${TARGET_ENVIRONMENT}"
-                bat 'echo Deployment Done'
+                // Deploy your application to a target environment (e.g., staging, production)
+                bat 'echo Value of ENV Variable is %MY_ENV_VAR%'
             }
-        }        
-    }
-    post {
-        always {
-            echo 'Prints whether deploy happened or not, success or failure'
         }
+    }
+
+    post {
         success {
+            // Actions to perform when the pipeline succeeds
             echo 'Pipeline succeeded!'
         }
         failure {
+            // Actions to perform when the pipeline fails
             echo 'Pipeline failed!'
         }
     }
