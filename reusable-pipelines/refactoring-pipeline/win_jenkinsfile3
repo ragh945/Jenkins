@@ -36,9 +36,11 @@ pipeline {
             steps {
                 script {
                     if (params.RELEASE) {
-                        env.VERSION_SUFFIX = "${RELEASE_VERSION}:${env.BUILD_NUMBER}"
+                        env.VERSION_SUFFIX = "${RELEASE_VERSION}-${env.BUILD_NUMBER}"
+"
                     } else {
-                        env.VERSION_SUFFIX = "${INT_VERSION}ci:${env.BUILD_NUMBER}"
+                        env.VERSION_SUFFIX = "${INT_VERSION}ci-${env.BUILD_NUMBER}"
+"
                     }
                 }
 
