@@ -1,0 +1,71 @@
+pipeline {
+    agent any
+
+    parameters {
+        booleanParam(name: 'RELEASE', defaultValue: false, description: 'Is this a Release Candidate?')
+    }
+
+    environment {
+        RELEASE_VERSION = '1.1.0'
+        INT_VERSION = 'R2'
+    }
+
+    stages {
+        stage('Audit tools') {
+            steps {
+                bat '''
+                  git version
+                  java -version
+                  mvn -version
+                '''
+            }
+        }
+
+        stage('Unit Test') {
+            steps {
+                dir('./java-tomcat-sample') {
+                    bat '''
+                        echo Executing Unit Tests...
+                        mvn test
+                    '''
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                script {
+                    if (params.RELEASE) {
+                        env.VERSION_SUFFIX = "${RELEASE_VERSION}:${env.BUILD_NUMBER}"
+                    } else {
+                        env.VERSION_SUFFIX = "${INT_VERSION}ci:${env.BUILD_NUMBER}"
+                    }
+                }
+
+                echo "Building version with suffix: ${env.VERSION_SUFFIX}"
+
+                dir('./java-tomcat-sample') {
+                    // Use Groovy string properly
+                    bat "mvn versions:set -DnewVersion=${env.VERSION_SUFFIX}-SNAPSHOT"
+                    bat "mvn versions:update-child-modules"
+                    bat "mvn clean package"
+                }
+            }
+        }
+
+        stage('Publish') {
+            when {
+                expression { return params.RELEASE }
+            }
+            steps {
+                archiveArtifacts('**/*.war')
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+    }
+}
