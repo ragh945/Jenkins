@@ -31,11 +31,9 @@ pipeline {
                 echo "Building version: ${VERSION} with suffix: ${RELEASE_VERSION}"
                 echo 'Mention your Application Build Code here!!!'
                 dir('./java-tomcat-sample') {
-                        bat '''
-                            mvn versions:set -DnewVersion="${VERSION}"-SNAPSHOT
-                            mvn versions:update-child-modules
-                            mvn clean package
-                        '''
+                        bat "mvn versions:set -DnewVersion=${VERSION}-SNAPSHOT"
+                        bat "mvn versions:update-child-modules"
+                        bat "mvn clean package"
                     }
             }
         }
