@@ -48,12 +48,6 @@ pipeline {
             }
         }
     }
-
-    post {
-        always {
-             // cleanWs()
-        }
-    }
 }
 
 // Helper Functions
@@ -76,9 +70,4 @@ def auditTools() {
 def packageApplication() {
     bat """
         mvn versions:set -DnewVersion=${env.VERSION_SUFFIX}-SNAPSHOT
-        mvn versions:update-child-modules
-        mvn clean package
-        echo Listing target directory:
-        dir target
-    """
-}
+        mvn versions:updat
