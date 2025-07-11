@@ -1,1 +1,82 @@
+pipeline {
+    agent any
+
+    parameters {
+        booleanParam(name: 'RELEASE', defaultValue: false, description: 'Is this a Release Candidate?')
+    }
+
+    environment {
+        RELEASE_VERSION = '1.1.0'
+        INT_VERSION = 'R2'
+    }
+
+    stages {
+        stage('Audit tools') {
+            steps {
+                auditTools()
+            }
+        }
+
+        stage('Unit Test') {
+            steps {
+                dir('./java-tomcat-sample') {
+                    bat '''
+                        echo Executing Unit Tests...
+                        mvn test
+                    '''
+                }
+            }
+        }
+
+        stage('Build') {
+            environment {
+                VERSION_SUFFIX = getBuildVersion()
+            }
+            steps {
+                echo "Building version: ${INT_VERSION} with suffix: ${VERSION_SUFFIX}"
+                echo 'Mention your Application Build Code here!!!'
+                dir('./java-tomcat-sample') {
+                    packageApplication()
+                }
+            }
+        }
+
+        stage('Publish') {
+            steps {
+                archiveArtifacts('**/*.war')
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+    }
+}
+
+// Use script block for helper functions
+def getBuildVersion() {
+    if (params.RELEASE) {
+        return "${env.RELEASE_VERSION}:${env.BUILD_NUMBER}"
+    } else {
+        return "${env.INT_VERSION}+ci:${env.BUILD_NUMBER}"
+    }
+}
+
+def auditTools() {
+    bat '''
+        git --version
+        java -version
+        mvn -version
+    '''
+}
+
+def packageApplication() {
+    bat """
+        mvn versions:set -DnewVersion=${getBuildVersion()}-SNAPSHOT
+        mvn versions:update-child-modules
+        mvn clean package
+    """
+}
 
