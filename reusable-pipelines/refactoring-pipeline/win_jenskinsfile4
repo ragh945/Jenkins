@@ -19,7 +19,7 @@ pipeline {
 
         stage('Unit Test') {
             steps {
-                dir('./java-tomcat-sample') {
+                dir('java-tomcat-sample') {
                     bat '''
                         echo Executing Unit Tests...
                         mvn test
@@ -29,13 +29,13 @@ pipeline {
         }
 
         stage('Build') {
-            environment {
-                VERSION_SUFFIX = getBuildVersion()
-            }
             steps {
-                echo "Building version: ${INT_VERSION} with suffix: ${VERSION_SUFFIX}"
-                echo 'Mention your Application Build Code here!!!'
-                dir('./java-tomcat-sample') {
+                script {
+                    env.VERSION_SUFFIX = getBuildVersion()
+                }
+
+                echo "Building version: ${env.INT_VERSION} with suffix: ${env.VERSION_SUFFIX}"
+                dir('java-tomcat-sample') {
                     packageApplication()
                 }
             }
@@ -43,7 +43,8 @@ pipeline {
 
         stage('Publish') {
             steps {
-                archiveArtifacts('**/*.war')
+                echo "Archiving WAR file..."
+                archiveArtifacts artifacts: 'java-tomcat-sample/target/*.war', fingerprint: true
             }
         }
     }
@@ -55,7 +56,7 @@ pipeline {
     }
 }
 
-// Use script block for helper functions
+// Helper Functions
 def getBuildVersion() {
     if (params.RELEASE) {
         return "${env.RELEASE_VERSION}:${env.BUILD_NUMBER}"
@@ -74,9 +75,9 @@ def auditTools() {
 
 def packageApplication() {
     bat """
-        mvn versions:set -DnewVersion=${getBuildVersion()}-SNAPSHOT
+        mvn versions:set -DnewVersion=${env.VERSION_SUFFIX}-SNAPSHOT
         mvn versions:update-child-modules
         mvn clean package
+        dir target
     """
 }
-
